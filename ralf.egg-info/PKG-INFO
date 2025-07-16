@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: ralf
+Version: 0.1.0
+Summary: RALF is a data-driven framework for selecting the most cost-effective, secure, and accurate LLM for any enterprise task
+Author: Venkatesh Tadinada
+Requires-Python: >=3.8
+Requires-Dist: pandas
+Requires-Dist: kagglehub
+Requires-Dist: peft
+Requires-Dist: transformers
+Requires-Dist: scikit-learn
+Requires-Dist: datasets
+Requires-Dist: evaluate
+Dynamic: author
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

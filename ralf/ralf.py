@@ -3,6 +3,8 @@ import pandas as pd
 import kagglehub
 import pickle
 import warnings
+import torch
+import psutil  # Add this import
 warnings.filterwarnings("ignore")  # Ignore warnings for cleaner output
 
 from peft import LoraConfig, get_peft_model
@@ -38,6 +40,25 @@ class Ralf:
         """
         Initializes the Ralf class with placeholders for datasets, model name, and trainer.
         """
+
+                # Hardware checks
+        self.gpu_available = torch.cuda.is_available()
+        self.gpu_count = torch.cuda.device_count() if self.gpu_available else 0
+        self.gpu_name = torch.cuda.get_device_name(0) if self.gpu_available else None
+        self.gpu_ram_gb = None
+        if self.gpu_available:
+            props = torch.cuda.get_device_properties(0)
+            self.gpu_ram_gb = round(props.total_memory / (1024 ** 3), 2)
+        self.ram_gb = round(psutil.virtual_memory().total / (1024 ** 3), 2)
+
+        print(f"GPU available: {self.gpu_available}")
+        if self.gpu_available:
+            print(f"GPU count: {self.gpu_count}")
+            print(f"GPU name: {self.gpu_name}")
+            print(f"GPU RAM: {self.gpu_ram_gb} GB")
+        print(f"Available system RAM: {self.ram_gb} GB")
+
+
         self.golden_dataset = None
         self.platinum_dataset = None
         # Add other datasets as needed
@@ -51,6 +72,18 @@ class Ralf:
         self.train_dataset = None
         self.val_dataset = None
         self.model = None
+        # keys
+        self.open_api_key = None
+        self.gemini_key = None
+        self.hf_token = None
+
+    def set_keys(self, open_api_key=None, gemini_key=None, hf_token=None):
+        """
+        Set API keys for OpenAI, Gemini, and Hugging Face.
+        """
+        self.open_api_key = open_api_key
+        self.gemini_key = gemini_key
+        self.hf_token = hf_token
 
     def load_and_process_data(self, df: pd.DataFrame, text_column: str, label_column: str, model_name: str):
         """

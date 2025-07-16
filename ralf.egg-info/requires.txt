@@ -1,0 +1,7 @@
+pandas
+kagglehub
+peft
+transformers
+scikit-learn
+datasets
+evaluate
