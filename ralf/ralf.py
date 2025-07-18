@@ -41,7 +41,7 @@ class Ralf:
         Initializes the Ralf class with placeholders for datasets, model name, and trainer.
         """
 
-                # Hardware checks
+        # Hardware checks
         self.gpu_available = torch.cuda.is_available()
         self.gpu_count = torch.cuda.device_count() if self.gpu_available else 0
         self.gpu_name = torch.cuda.get_device_name(0) if self.gpu_available else None
@@ -76,6 +76,20 @@ class Ralf:
         self.open_api_key = None
         self.gemini_key = None
         self.hf_token = None
+    
+    #copilot generated code
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Remove non-picklable attributes
+        for attr in ['model', 'trainer', 'tokenizer']:
+            state[attr] = None
+        return state
+    #copilot generated code
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        # You may need to re-initialize these attributes after loading
+        # For example, reload model/tokenizer if needed
+
 
     def set_keys(self, open_api_key=None, gemini_key=None, hf_token=None):
         """
@@ -262,3 +276,16 @@ class Ralf:
         except Exception as e:
             print(f"Error loading Ralf state: {e}")
             return None
+            
+    #copilot generated code
+    def restore_non_picklable(self):
+        """
+        Restores non-picklable attributes after loading from pickle.
+        """
+        if self.model_name is not None and self.num_labels is not None:
+            self.load_and_configure_model()
+        if self.tokenizer is None and self.model_name is not None:
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        if self.train_dataset is not None and self.val_dataset is not None and self.model is not None:
+            self.initialize_trainer()
+
