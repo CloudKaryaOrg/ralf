@@ -5,3 +5,5 @@ transformers
 scikit-learn
 datasets
 evaluate
+pytest
+pytest-cov
