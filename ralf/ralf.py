@@ -13,6 +13,7 @@ from transformers.trainer_callback import TrainerCallback
 from sklearn.model_selection import train_test_split
 from datasets import Dataset, ClassLabel, Features, Value
 import evaluate # Added based on previous metric computation code
+from pydantic import BaseModel, Field
 
 # Define the custom callback for saving the Ralf instance
 class RalfSavingCallback(TrainerCallback):
@@ -30,6 +31,24 @@ class RalfSavingCallback(TrainerCallback):
         print(f"Saving Ralf state at step {state.global_step}...")
         self.ralf_instance.save_state(file_path=self.save_path)
         print("Ralf state saved.")
+
+# Define the TrainerConfig class using Pydantic
+class TrainerConfig(BaseModel):
+    output_dir: str = Field(default="./results")
+    num_train_epochs: int = Field(default=3)
+    per_device_train_batch_size: int = Field(default=16)
+    per_device_eval_batch_size: int = Field(default=16)
+    warmup_steps: int = Field(default=500)
+    weight_decay: float = Field(default=0.01)
+    logging_dir: str = Field(default="./logs")
+    logging_steps: int = Field(default=10)
+    eval_strategy: str = Field(default="epoch")
+    save_strategy: str = Field(default="epoch")
+    load_best_model_at_end: bool = Field(default=True)
+    metric_for_best_model: str = Field(default="eval_loss")
+    greater_is_better: bool = Field(default=False)
+    report_to: str = Field(default="none")
+    save_path: str = Field(default="ralf_state.pkl")
 
 # Define the Ralf class
 class Ralf:
@@ -184,44 +203,39 @@ class Ralf:
 
         print(f"Model loading and LoRA setup completed for '{self.model_name}'.")
 
-    def initialize_trainer(self, output_dir: str = "./results", save_path: str = "ralf_state.pkl"):
+    def initialize_trainer(self, config: TrainerConfig):
         """
-        Intializes the Hugging Face Trainer object for training.
+        Initializes the Hugging Face Trainer object for training using a Pydantic config.
 
         Args:
-            output_dir: The output directory for model checkpoints and logs.
-            save_path: The path to save the Ralf state using the custom callback.
+            config: TrainerConfig object containing all trainer parameters.
         """
-        # Define training arguments
         training_args = TrainingArguments(
-            output_dir=output_dir,  # Output directory for model checkpoints and logs
-            num_train_epochs=3,  # Number of training epochs
-            per_device_train_batch_size=16,  # Batch size for training
-            per_device_eval_batch_size=16,  # Batch size for evaluation
-            warmup_steps=500,  # Number of warmup steps for learning rate scheduler
-            weight_decay=0.01,  # Strength of weight decay
-            logging_dir="./logs",  # Directory for storing logs
-            logging_steps=10, # Log every 10 steps
-            eval_strategy="epoch", # Evaluate at the end of each epoch
-            save_strategy="epoch", # Save checkpoint at the end of each epoch
-            load_best_model_at_end=True, # Load the best model at the end of training
-            metric_for_best_model="eval_loss", # Metric to use for loading the best model
-            greater_is_better=False, # For eval_loss, lower is better
-            report_to="none", # Disable reporting to services like W&B for simplicity
+            output_dir=config.output_dir,
+            num_train_epochs=config.num_train_epochs,
+            per_device_train_batch_size=config.per_device_train_batch_size,
+            per_device_eval_batch_size=config.per_device_eval_batch_size,
+            warmup_steps=config.warmup_steps,
+            weight_decay=config.weight_decay,
+            logging_dir=config.logging_dir,
+            logging_steps=config.logging_steps,
+            eval_strategy=config.eval_strategy,
+            save_strategy=config.save_strategy,
+            load_best_model_at_end=config.load_best_model_at_end,
+            metric_for_best_model=config.metric_for_best_model,
+            greater_is_better=config.greater_is_better,
+            report_to=config.report_to,
         )
 
-        # Initialize the custom callback
-        ralf_saving_callback = RalfSavingCallback(self, save_path=save_path)
+        ralf_saving_callback = RalfSavingCallback(self, save_path=config.save_path)
 
-        # Initialize the Trainer
         self.trainer = Trainer(
-            model=self.model,  # Our LoRA-configured model
-            args=training_args,  # Training arguments
-            train_dataset=self.train_dataset,  # Training dataset
-            eval_dataset=self.val_dataset,  # Validation dataset
-            data_collator=DataCollatorWithPadding(tokenizer=self.tokenizer), # Use DataCollatorWithPadding
-            # compute_metrics=compute_metrics # Optional: define a function to compute metrics
-            callbacks=[ralf_saving_callback] # Add the custom callback here
+            model=self.model,
+            args=training_args,
+            train_dataset=self.train_dataset,
+            eval_dataset=self.val_dataset,
+            data_collator=DataCollatorWithPadding(tokenizer=self.tokenizer),
+            callbacks=[ralf_saving_callback]
         )
 
         print("Trainer initialization completed with RalfSavingCallback.")
