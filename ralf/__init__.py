@@ -1,1 +1,1 @@
-from .ralf import Ralf, RalfSavingCallback
+from .ralf import Ralf, RalfSavingCallback, TrainerConfig
