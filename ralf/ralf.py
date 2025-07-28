@@ -291,7 +291,7 @@ class Ralf:
             return None
         
     #copilot generated code
-    def restore_non_picklable(self):
+    def restore_non_picklable(self, config: TrainerConfig):
         """
         Restores non-picklable attributes after loading from pickle.
         """
