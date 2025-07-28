@@ -300,4 +300,4 @@ class Ralf:
         if self.tokenizer is None and self.model_name is not None:
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         if self.train_dataset is not None and self.val_dataset is not None and self.model is not None:
-            self.initialize_trainer()
+            self.initialize_trainer(config)
