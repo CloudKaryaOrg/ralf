@@ -223,22 +223,7 @@ class Ralf:
         Args:
             config: TrainerConfig object containing all trainer parameters.
         """
-        training_args = TrainingArguments(
-            output_dir=config.output_dir,
-            num_train_epochs=config.num_train_epochs,
-            per_device_train_batch_size=config.per_device_train_batch_size,
-            per_device_eval_batch_size=config.per_device_eval_batch_size,
-            warmup_steps=config.warmup_steps,
-            weight_decay=config.weight_decay,
-            logging_dir=config.logging_dir,
-            logging_steps=config.logging_steps,
-            eval_strategy=config.eval_strategy,
-            save_strategy=config.save_strategy,
-            load_best_model_at_end=config.load_best_model_at_end,
-            metric_for_best_model=config.metric_for_best_model,
-            greater_is_better=config.greater_is_better,
-            report_to=config.report_to,
-        )
+        training_args = TrainingArguments(**config.dict())
 
         ralf_saving_callback = RalfSavingCallback(self, save_path=config.save_path)
 
