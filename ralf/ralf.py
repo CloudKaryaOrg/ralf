@@ -223,7 +223,7 @@ class Ralf:
         Args:
             config: TrainerConfig object containing all trainer parameters.
         """
-        training_args = TrainingArguments(**config.dict())
+        training_args = TrainingArguments(**config.model_dump())
 
         ralf_saving_callback = RalfSavingCallback(self, save_path=config.save_path)
 
