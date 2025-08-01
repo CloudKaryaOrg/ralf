@@ -405,9 +405,9 @@ class Ralf:
             return f"Error estimating: {e}"
 
 
-    def recommend(self, input_csv_file=uploaded_file,
-                source_col=source_col,
-                target_col=target_col,
+    def recommend(self, input_csv_file,
+                source_col,
+                target_col,
                 ):
         """Recommends top 3 LLMs for fine-tuning and a golden dataset based on problem type and resources using GPT-4o-mini or Gemini."""
 
