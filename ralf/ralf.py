@@ -17,71 +17,8 @@ from transformers import AutoModelForSequenceClassification, TrainingArguments, 
 from transformers.trainer_callback import TrainerCallback
 from sklearn.model_selection import train_test_split
 from datasets import Dataset, ClassLabel, Features, Value
-<<<<<<< HEAD
 import evaluate # Added based on previous metric computation code
 from pydantic import BaseModel, Field
-=======
-
-from transformers import AutoConfig
-
-def estimate_param_count(model_id="distilbert-base-uncased"):
-    try:
-        config = AutoConfig.from_pretrained(model_id)
-
-        # Get common configuration attributes, handling different names
-        vocab_size = getattr(config, 'vocab_size', None)
-        hidden_size = getattr(config, 'hidden_size', getattr(config, 'dim', None))
-        num_layers = getattr(config, 'num_hidden_layers', getattr(config, 'n_layers', None))
-        intermediate_size = getattr(config, 'intermediate_size', getattr(config, 'hidden_dim', None))
-        num_attention_heads = getattr(config, 'num_attention_heads', getattr(config, 'n_heads', None)) # Needed for some models
-
-        if None in [vocab_size, hidden_size, num_layers, intermediate_size]:
-             return "Error: Could not get all config attributes for parameter estimation."
-
-
-        # This is a simplified estimation and may not be perfectly accurate for all models
-        # It primarily covers BERT-like architectures
-
-        # Embeddings
-        embeddings = vocab_size * hidden_size
-
-        # Transformer layers (simplified estimation covering common components)
-        # This part might need further refinement for specific architectures
-        # A more accurate way would involve iterating through model components, but this is more complex
-        # Attempting a generalized approach based on common parameters
-
-        # Attention parameters (simplified: QKV weights + output weights + biases)
-        attn_params_per_head = hidden_size * (hidden_size // num_attention_heads) + (hidden_size // num_attention_heads) # QKV per head
-        attn_output_per_layer = hidden_size * hidden_size + hidden_size # Output projection + bias
-        total_attn_params_per_layer = num_attention_heads * attn_params_per_head * 3 + attn_output_per_layer # 3 for QKV
-
-        # FFN parameters (input weight + output weight + biases)
-        ffn_params_per_layer = hidden_size * intermediate_size + intermediate_size * hidden_size + intermediate_size + hidden_size # weights + biases
-
-        # Layer Norm parameters (approximate: 2*hidden_size for gamma and beta)
-        layer_norm_params_per_layer = 2 * hidden_size * 2 # Two layer norms per layer typically
-
-        transformer_total = num_layers * (total_attn_params_per_layer + ffn_params_per_layer + layer_norm_params_per_layer)
-
-
-        total = embeddings + transformer_total # This estimation might still miss some parameters
-
-        # Format the total parameter count with units M, G, B, or P
-        if total >= 1e15:
-            return f"{total / 1e15:.2f}P"
-        elif total >= 1e12:
-            return f"{total / 1e12:.2f}T" # Using T for trillion
-        elif total >= 1e9:
-            return f"{total / 1e9:.2f}B"
-        elif total >= 1e6:
-            return f"{total / 1e6:.2f}M"
-        else:
-            return str(total) # Return as string for smaller numbers
-
-    except Exception as e:
-        return f"Error estimating: {e}"
-
->>>>>>> 02b8de5a75695b836abdcdfcf18de6ed159b661c
 
 # Define the custom callback for saving the Ralf instance
 class RalfSavingCallback(TrainerCallback):
@@ -167,7 +104,6 @@ class Ralf:
         self.train_dataset = None
         self.val_dataset = None
         self.model = None
-<<<<<<< HEAD
         # keys
         self.open_api_key = None
         self.gemini_key = None
@@ -185,13 +121,6 @@ class Ralf:
         self.__dict__.update(state)
         # You may need to re-initialize these attributes after loading
         # For example, reload model/tokenizer if needed
-=======
-
-        # API keys
-        self.open_api_key = OPENAI_API_KEY
-        self.gemini_key = GEMINI_API_KEY
-        self.hf_token = HF_TOKEN # Stored the HF_TOKEN
->>>>>>> 02b8de5a75695b836abdcdfcf18de6ed159b661c
 
     def set_keys(self, open_api_key=None, gemini_key=None, hf_token=None):
         """
@@ -316,29 +245,7 @@ class Ralf:
         Args:
             config: TrainerConfig object containing all trainer parameters.
         """
-<<<<<<< HEAD
         training_args = TrainingArguments(**config.model_dump(exclude={"save_path"}))
-=======
-        # Define training arguments
-        training_args = TrainingArguments(
-            output_dir=output_dir,  # Output directory for model checkpoints and logs
-            num_train_epochs=3,  # Number of training epochs
-            per_device_train_batch_size=16,  # Batch size for training
-            per_device_eval_batch_size=16,  # Batch size for evaluation
-            warmup_steps=500,  # Number of warmup steps for learning rate scheduler
-            weight_decay=0.01,  # Strength of weight decay
-            logging_dir="./logs",  # Directory for storing logs
-            logging_steps=10, # Log every 10 steps
-            eval_strategy="epoch", # Evaluate at the end of each epoch
-            save_strategy="epoch", # Save checkpoint at the end of each epoch
-            load_best_model_at_end=True, # Load the best model at the end of training
-            metric_for_best_model="eval_loss", # Metric to use for loading the best model
-            greater_is_better=False, # For eval_loss, lower is better
-            report_to="none", # Disable reporting to services like W&B for simplicity
-            hub_token=self.hf_token, # Pass HF token to trainer for potentially pushing to hub
-            hub_model_id=f"my-awesome-model-{os.path.basename(output_dir)}" # Example hub_model_id
-        )
->>>>>>> 02b8de5a75695b836abdcdfcf18de6ed159b661c
 
         ralf_saving_callback = RalfSavingCallback(self, save_path=config.save_path)
 
@@ -389,20 +296,6 @@ class Ralf:
         except Exception as e:
             print(f"Error loading Ralf state: {e}")
             return None
-<<<<<<< HEAD
-        
-    #copilot generated code
-    def restore_non_picklable(self, config: TrainerConfig):
-        """
-        Restores non-picklable attributes after loading from pickle.
-        """
-        if self.model_name is not None and self.num_labels is not None:
-            self.load_and_configure_model()
-        if self.tokenizer is None and self.model_name is not None:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        if self.train_dataset is not None and self.val_dataset is not None and self.model is not None:
-            self.initialize_trainer(config)
-=======
 
     def format_param_size(self, total_params):
         """Formats parameter count with units M, B, or P."""
@@ -672,4 +565,3 @@ class Ralf:
             return json.loads(content)
         except Exception as e:
             return f"Error calling API for analysis: {e}"
->>>>>>> 02b8de5a75695b836abdcdfcf18de6ed159b661c
