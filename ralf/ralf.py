@@ -47,7 +47,6 @@ def get_system_info():
         "System RAM": ram
     }
 
-
 def estimate_param_count(model_id="distilbert-base-uncased"):
     try:
         config = AutoConfig.from_pretrained(model_id)
@@ -123,107 +122,8 @@ class RalfSavingCallback(TrainerCallback):
         self.ralf_instance.save_state(file_path=self.save_path)
         print("Ralf state saved.")
 
-# Define the Ralf class
-class Ralf:
-    """
-    A class to encapsulate the datasets, model, and trainer for the Ralf project.
-    """
-    def __init__(self, HF_TOKEN, OPENAI_API_KEY=None, GEMINI_API_KEY=None): # Made HF_TOKEN required and others optional for recommendation
-        """
-        Initializes the Ralf class with placeholders for datasets, model name, and trainer.
-        Requires HF_TOKEN and at least one of OPENAI_API_KEY or GEMINI_API_KEY for recommendations.
-        """
-
-        # Validate required keys
-        if not HF_TOKEN:
-            raise ValueError("HF_TOKEN is required.")
-        if not OPENAI_API_KEY and not GEMINI_API_KEY:
-            raise ValueError("Either OPENAI_API_KEY or GEMINI_API_KEY must be provided for recommendations.")
-
-        # Hardware checks
-        system_info = get_system_info()
-        self.gpu_available = system_info["GPU Available"] == "✅ Yes"
-        self.gpu_name = system_info["GPU Model"]
-        self.gpu_ram_gb = system_info["GPU Memory"]
-        self.ram_gb = system_info["System RAM"]
-        self.gpu_count = torch.cuda.device_count() if self.gpu_available else 0
-
-        print(f"GPU available: {self.gpu_available}")
-        if self.gpu_available:
-            print(f"GPU count: {self.gpu_count}")
-            print(f"GPU name: {self.gpu_name}")
-            print(f"GPU RAM: {self.gpu_ram_gb} GB")
-        print(f"Available system RAM: {self.ram_gb} GB")
-
-        self.golden_dataset = None
-        self.platinum_dataset = None
-        # Add other datasets as needed
-        self.other_datasets = {}
-        self.model_name = None
-        self.trainer = None
-        self.num_labels = None
-        self.label_to_id = None
-        self.id_to_label = None
-        self.tokenizer = None
-        self.train_dataset = None
-        self.val_dataset = None
-        self.model = None
-
-        # API keys
-        self.open_api_key = OPENAI_API_KEY
-        self.gemini_key = GEMINI_API_KEY
-        self.hf_token = HF_TOKEN # Stored the HF_TOKEN
-
-    def get_llm_client(self):
-        """Helper method to get the appropriate LLM client."""
-        if self.open_api_key:
-            return {
-                'type': 'openai',
-                'client': OpenAI(api_key=self.open_api_key),
-                'model': OPEN_AI_MODEL
-          }
-        elif self.gemini_key:
-            genai.configure(api_key=self.gemini_key)
-            return {
-                'type': 'gemini',
-                'client': genai.GenerativeModel(GEMINI_MODEL),
-                'model': GEMINI_MODEL
-           }
-        return None
-
-    def get_llm_response(self, client_info, prompt):
-        """Helper method to get responses from either OpenAI or Gemini."""
-        try:
-           if client_info['type'] == 'openai':
-               response = client_info['client'].chat.completions.create(
-                    model=client_info['model'],
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=512,
-                    temperature=0.1,
-        )
-               return response.choices[0].message.content
-           else:  # Gemini
-               response = client_info['client'].generate_content(prompt)
-               return response.text
-        except Exception as e:
-           raise Exception(f"Error calling {client_info['type']} API: {str(e)}")
-
-    def set_keys(self, open_api_key=None, gemini_key=None, hf_token=None):
-        """
-        Set API keys for OpenAI, Gemini, and Hugging Face.
-        Validates that at least one of open_api_key or gemini_key is provided if setting either.
-        """
-        if hf_token is not None:
-            self.hf_token = hf_token
-
-        if open_api_key is not None:
-            self.open_api_key = open_api_key
-        elif gemini_key is not None:
-            self.gemini_key = gemini_key
-        else:
-            raise ValueError("Either open_api_key or gemini_key must be provided.")
-
-
+# Functions related to finetuning/reTraining the model
+class RalfTraining:
     def load_and_process_data(self, df: pd.DataFrame, text_column: str, label_column: str, model_name: str):
         """
         Loads, processes, and tokenizes the data, and splits it into training and validation sets.
@@ -460,6 +360,105 @@ class Ralf:
         except Exception as e:
             return f"Error estimating: {e}"
 
+# Define the Ralf class
+class Ralf(RalfTraining):
+    """
+    A class to encapsulate the datasets, model, and trainer for the Ralf project.
+    """
+    def __init__(self, HF_TOKEN, OPENAI_API_KEY=None, GEMINI_API_KEY=None): # Made HF_TOKEN required and others optional for recommendation
+        """
+        Initializes the Ralf class with placeholders for datasets, model name, and trainer.
+        Requires HF_TOKEN and at least one of OPENAI_API_KEY or GEMINI_API_KEY for recommendations.
+        """
+
+        # Validate required keys
+        if not HF_TOKEN:
+            raise ValueError("HF_TOKEN is required.")
+        if not OPENAI_API_KEY and not GEMINI_API_KEY:
+            raise ValueError("Either OPENAI_API_KEY or GEMINI_API_KEY must be provided for recommendations.")
+
+        # Hardware checks
+        system_info = get_system_info()
+        self.gpu_available = system_info["GPU Available"] == "✅ Yes"
+        self.gpu_name = system_info["GPU Model"]
+        self.gpu_ram_gb = system_info["GPU Memory"]
+        self.ram_gb = system_info["System RAM"]
+        self.gpu_count = torch.cuda.device_count() if self.gpu_available else 0
+
+        print(f"GPU available: {self.gpu_available}")
+        if self.gpu_available:
+            print(f"GPU count: {self.gpu_count}")
+            print(f"GPU name: {self.gpu_name}")
+            print(f"GPU RAM: {self.gpu_ram_gb} GB")
+        print(f"Available system RAM: {self.ram_gb} GB")
+
+        self.golden_dataset = None
+        self.platinum_dataset = None
+        # Add other datasets as needed
+        self.other_datasets = {}
+        self.model_name = None
+        self.trainer = None
+        self.num_labels = None
+        self.label_to_id = None
+        self.id_to_label = None
+        self.tokenizer = None
+        self.train_dataset = None
+        self.val_dataset = None
+        self.model = None
+
+        # API keys
+        self.open_api_key = OPENAI_API_KEY
+        self.gemini_key = GEMINI_API_KEY
+        self.hf_token = HF_TOKEN # Stored the HF_TOKEN
+
+    def get_llm_client(self):
+        """Helper method to get the appropriate LLM client."""
+        if self.open_api_key:
+            return {
+                'type': 'openai',
+                'client': OpenAI(api_key=self.open_api_key),
+                'model': OPEN_AI_MODEL
+          }
+        elif self.gemini_key:
+            genai.configure(api_key=self.gemini_key)
+            return {
+                'type': 'gemini',
+                'client': genai.GenerativeModel(GEMINI_MODEL),
+                'model': GEMINI_MODEL
+           }
+        return None
+
+    def get_llm_response(self, client_info, prompt):
+        """Helper method to get responses from either OpenAI or Gemini."""
+        try:
+           if client_info['type'] == 'openai':
+               response = client_info['client'].chat.completions.create(
+                    model=client_info['model'],
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=512,
+                    temperature=0.1,
+        )
+               return response.choices[0].message.content
+           else:  # Gemini
+               response = client_info['client'].generate_content(prompt)
+               return response.text
+        except Exception as e:
+           raise Exception(f"Error calling {client_info['type']} API: {str(e)}")
+
+    def set_keys(self, open_api_key=None, gemini_key=None, hf_token=None):
+        """
+        Set API keys for OpenAI, Gemini, and Hugging Face.
+        Validates that at least one of open_api_key or gemini_key is provided if setting either.
+        """
+        if hf_token is not None:
+            self.hf_token = hf_token
+
+        if open_api_key is not None:
+            self.open_api_key = open_api_key
+        elif gemini_key is not None:
+            self.gemini_key = gemini_key
+        else:
+            raise ValueError("Either open_api_key or gemini_key must be provided.")
 
     def recommend(self, input_csv_file,
                 source_col,
