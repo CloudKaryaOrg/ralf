@@ -47,6 +47,7 @@ def get_system_info():
         "System RAM": ram
     }
 
+"""
 def estimate_param_count(model_id="distilbert-base-uncased"):
     try:
         config = AutoConfig.from_pretrained(model_id)
@@ -103,7 +104,7 @@ def estimate_param_count(model_id="distilbert-base-uncased"):
 
     except Exception as e:
         return f"Error estimating: {e}"
-
+"""
 
 # Define the custom callback for saving the Ralf instance
 class RalfSavingCallback(TrainerCallback):
@@ -124,6 +125,21 @@ class RalfSavingCallback(TrainerCallback):
 
 # Functions related to finetuning/reTraining the model
 class RalfTraining:
+    def __init__(self):
+        self.golden_dataset = None
+        self.platinum_dataset = None
+        # Add other datasets as needed
+        self.other_datasets = {}
+        self.model_name = None
+        self.trainer = None
+        self.num_labels = None
+        self.label_to_id = None
+        self.id_to_label = None
+        self.tokenizer = None
+        self.train_dataset = None
+        self.val_dataset = None
+        self.model = None
+
     def load_and_process_data(self, df: pd.DataFrame, text_column: str, label_column: str, model_name: str):
         """
         Loads, processes, and tokenizes the data, and splits it into training and validation sets.
