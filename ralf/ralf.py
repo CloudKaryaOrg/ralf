@@ -47,65 +47,6 @@ def get_system_info():
         "System RAM": ram
     }
 
-"""
-def estimate_param_count(model_id="distilbert-base-uncased"):
-    try:
-        config = AutoConfig.from_pretrained(model_id)
-
-        # Get common configuration attributes, handling different names
-        vocab_size = getattr(config, 'vocab_size', None)
-        hidden_size = getattr(config, 'hidden_size', getattr(config, 'dim', None))
-        num_layers = getattr(config, 'num_hidden_layers', getattr(config, 'n_layers', None))
-        intermediate_size = getattr(config, 'intermediate_size', getattr(config, 'hidden_dim', None))
-        num_attention_heads = getattr(config, 'num_attention_heads', getattr(config, 'n_heads', None)) # Needed for some models
-
-        if None in [vocab_size, hidden_size, num_layers, intermediate_size]:
-             return "Error: Could not get all config attributes for parameter estimation."
-
-
-        # This is a simplified estimation and may not be perfectly accurate for all models
-        # It primarily covers BERT-like architectures
-
-        # Embeddings
-        embeddings = vocab_size * hidden_size
-
-        # Transformer layers (simplified estimation covering common components)
-        # This part might need further refinement for specific architectures
-        # A more accurate way would involve iterating through model components, but this is more complex
-        # Attempting a generalized approach based on common parameters
-
-        # Attention parameters (simplified: QKV weights + output weights + biases)
-        attn_params_per_head = hidden_size * (hidden_size // num_attention_heads) + (hidden_size // num_attention_heads) # QKV per head
-        attn_output_per_layer = hidden_size * hidden_size + hidden_size # Output projection + bias
-        total_attn_params_per_layer = num_attention_heads * attn_params_per_head * 3 + attn_output_per_layer # 3 for QKV
-
-        # FFN parameters (input weight + output weight + biases)
-        ffn_params_per_layer = hidden_size * intermediate_size + intermediate_size * hidden_size + intermediate_size + hidden_size # weights + biases
-
-        # Layer Norm parameters (approximate: 2*hidden_size for gamma and beta)
-        layer_norm_params_per_layer = 2 * hidden_size * 2 # Two layer norms per layer typically
-
-        transformer_total = num_layers * (total_attn_params_per_layer + ffn_params_per_layer + layer_norm_params_per_layer)
-
-
-        total = embeddings + transformer_total # This estimation might still miss some parameters
-
-        # Format the total parameter count with units M, G, B, or P
-        if total >= 1e15:
-            return f"{total / 1e15:.2f}P"
-        elif total >= 1e12:
-            return f"{total / 1e12:.2f}T" # Using T for trillion
-        elif total >= 1e9:
-            return f"{total / 1e9:.2f}B"
-        elif total >= 1e6:
-            return f"{total / 1e6:.2f}M"
-        else:
-            return str(total) # Return as string for smaller numbers
-
-    except Exception as e:
-        return f"Error estimating: {e}"
-"""
-
 # Define the custom callback for saving the Ralf instance
 class RalfSavingCallback(TrainerCallback):
     """

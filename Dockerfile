@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Set work directory
-WORKDIR /app
+WORKDIR /ralf
 
 # Install system dependencies (if needed)
 RUN apt-get update && rm -rf /var/lib/apt/lists/* && apt-get clean
@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app code
-COPY ralf ./app
+COPY ralf ./ralf
 
 # Run Streamlit app
-CMD ["python", "app/test_ralf.py"]
+CMD ["python", "ralf/test_ralf.py"]
