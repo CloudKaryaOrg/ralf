@@ -5,7 +5,7 @@ humanize==4.12.3
 nltk==3.9.1
 openai==1.100.0
 pandas==2.3.1
-peft==0.17.0
+# peft==0.17.0
 psutil==7.0.0
 scikit-learn==1.7.1
 streamlit==1.48.1

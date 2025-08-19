@@ -1,6 +1,6 @@
 pandas
 kagglehub
-peft
+# peft
 transformers
 scikit-learn
 datasets

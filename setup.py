@@ -9,7 +9,7 @@ setup(
     install_requires=[
         "pandas",
         "kagglehub",
-        "peft",
+#        "peft",
         "transformers",
         "scikit-learn",
         "datasets",

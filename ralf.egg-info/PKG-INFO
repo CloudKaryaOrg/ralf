@@ -6,7 +6,6 @@ Author: Venkatesh Tadinada
 Requires-Python: >=3.8
 Requires-Dist: pandas
 Requires-Dist: kagglehub
-Requires-Dist: peft
 Requires-Dist: transformers
 Requires-Dist: scikit-learn
 Requires-Dist: datasets
