@@ -1,9 +1,10 @@
 from ralf import Ralf
 import pandas as pd
+import getpass
 
 print("RALF instance getting initialized.")
 
-hfToken = input("Please enter HuggingFace Token: ")
+hfToken = getpass.getpass(prompt="Please enter HuggingFace Token: ")
 
 my_ralf = Ralf(HF_TOKEN=hfToken, GEMINI_API_KEY='abc456')
 print("RALF instance created successfully.")
