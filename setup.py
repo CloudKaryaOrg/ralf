@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
     name="ralf",
 #    version=__version__,
-    version="0.10.0",
+    version="0.1.10",
     packages=find_packages(),
     install_requires=[
         "pandas",
