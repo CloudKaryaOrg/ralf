@@ -1,8 +1,9 @@
 from setuptools import setup, find_packages
-# from .ralf.__init__ import __version__
+from .ralf.__init__ import __version__
 
 setup(
     name="ralf",
+    version=__version__,
     packages=find_packages(),
     install_requires=[
         "pandas",
@@ -17,6 +18,5 @@ setup(
     python_requires=">=3.8",
 )
 
-#    version=__version__,
 #    version="0.1.10-setup",
 #        "peft",
