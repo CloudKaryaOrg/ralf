@@ -162,5 +162,7 @@ cython_debug/
 #.idea/
 
 .DS_Store*
+settings.json
+.vscode/
 *idea
-*.env
+*.env*
