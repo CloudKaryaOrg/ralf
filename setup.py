@@ -3,6 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ralf",
+    version="0.1.11",
     packages=find_packages(),
     install_requires=[
         "pandas",
@@ -18,5 +19,4 @@ setup(
 )
 
 #    version=__version__,
-#    version="0.1.10-setup",
 #        "peft",
