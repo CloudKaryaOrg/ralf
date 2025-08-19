@@ -12,3 +12,5 @@ pytest-cov
 scikit-learn==1.7.1
 streamlit==1.48.1
 transformers==4.55.2
+pytest
+pytest-cov
