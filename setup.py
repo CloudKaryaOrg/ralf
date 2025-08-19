@@ -3,13 +3,10 @@ from setuptools import setup, find_packages
 
 setup(
     name="ralf",
-#    version=__version__,
-    version="0.1.10-setup",
     packages=find_packages(),
     install_requires=[
         "pandas",
         "kagglehub",
-#        "peft",
         "transformers",
         "scikit-learn",
         "datasets",
@@ -19,3 +16,7 @@ setup(
     description="RALF is a data-driven framework for selecting the most cost-effective, secure, and accurate LLM for any enterprise task",
     python_requires=">=3.8",
 )
+
+#    version=__version__,
+#    version="0.1.10-setup",
+#        "peft",
