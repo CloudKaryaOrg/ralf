@@ -1,10 +1,9 @@
 from setuptools import setup, find_packages
-# from ralf.__init__ import __version__
+from .ralf.__init__ import __version__
 
 setup(
     name="ralf",
-#    version=__version__,
-    version="0.1.10",
+    version=__version__,
     packages=find_packages(),
     install_requires=[
         "pandas",
