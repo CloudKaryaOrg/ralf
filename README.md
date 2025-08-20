@@ -7,6 +7,12 @@ docker build -t ralf-test .
 docker run --rm -ti ralf-test
 ```
 
+## Building the package and necessary files
+Run the following command in the ralf folder will update files in the "ralf.egg-info" folder. Run this before committing the changes and pushing the commits back to the remote repository.
+```
+pip install .
+```
+
 # 
 ## 📋 Prerequisites
 
