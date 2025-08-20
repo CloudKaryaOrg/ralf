@@ -5,7 +5,7 @@ import os
 
 # Read the version from my_package/__init__.py
 def get_version():
-    with open(os.path.join(os.path.dirname(__file__), 'my_package', '__init__.py')) as f:
+    with open(os.path.join(os.path.dirname(__file__), 'ralf', '__init__.py')) as f:
         for line in f:
             if line.startswith('__version__'):
                 return line.split('=')[1].strip().strip('"\'')
