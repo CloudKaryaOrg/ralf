@@ -7,6 +7,8 @@ from openai import OpenAI
 import humanize
 import google.generativeai as genai
 from transformers import AutoConfig
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+
 
 if os.environ.get('RALF-SERVICE') != '1':
     import torch
@@ -272,65 +274,101 @@ class RalfTraining:
         self.model.print_trainable_parameters()
 
         print(f"Model loading and LoRA setup completed for '{self.model_name}'.")
+    @staticmethod
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        predictions = logits.argmax(axis=-1)
+        return {
+            "accuracy": accuracy_score(labels, predictions),
+            "f1": f1_score(labels, predictions, average="weighted"),
+            "precision": precision_score(labels, predictions, average="weighted"),
+            "recall": recall_score(labels, predictions, average="weighted")
+        }
+    results = []
 
-    def initialize_trainer(self, output_dir: str = "./results", save_path: str = "ralf_state.pkl"):
+    def initialize_trainer(self, model_name: str,output_dir: str = "./results", save_path: str = "ralf_state.pkl"):
         """
-        Intializes the Hugging Face Trainer object for training.
+        Initializes the Hugging Face Trainer object for training with LoRA if supported,
+        otherwise full fine-tuning.
+        """
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer, DataCollatorWithPadding
+        from peft import LoraConfig, get_peft_model
+        import os
 
-        Args:
-            output_dir: The output directory for model checkpoints and logs.
-            save_path: The path to save the Ralf state using the custom callback.
-        """
-        # Define training arguments
-        training_args = TrainingArguments(
-            output_dir=output_dir,  # Output directory for model checkpoints and logs
-            num_train_epochs=3,  # Number of training epochs
-            per_device_train_batch_size=16,  # Batch size for training
-            per_device_eval_batch_size=16,  # Batch size for evaluation
-            warmup_steps=500,  # Number of warmup steps for learning rate scheduler
-            weight_decay=0.01,  # Strength of weight decay
-            logging_dir="./logs",  # Directory for storing logs
-            logging_steps=10, # Log every 10 steps
-            eval_strategy="epoch", # Evaluate at the end of each epoch
-            save_strategy="epoch", # Save checkpoint at the end of each epoch
-            load_best_model_at_end=True, # Load the best model at the end of training
-            metric_for_best_model="eval_loss", # Metric to use for loading the best model
-            greater_is_better=False, # For eval_loss, lower is better
-            report_to="none", # Disable reporting to services like W&B for simplicity
-            hub_token=self.hf_token, # Pass HF token to trainer for potentially pushing to hub
-            hub_model_id=f"my-awesome-model-{os.path.basename(output_dir)}" # Example hub_model_id
+        def get_target_modules(name):
+            name = name.lower()
+            if "bert" in name or "roberta" in name or "distilbert" in name:
+                return ["query", "key", "value"]
+            elif "albert" in name:
+                return ["query", "key", "value", "attention"]
+            elif "xlnet" in name:
+                return ["q", "k", "v"]
+            else:
+                return None
+
+    # Load tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    # Load model
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_name,
+            num_labels=len(set(self.train_dataset['label']))
         )
 
-        # Initialize the custom callback
+    # Try LoRA if supported
+        target_modules = get_target_modules(model_name)
+        if target_modules:
+            try:
+                peft_config = LoraConfig(
+                    task_type="SEQ_CLS",
+                    inference_mode=False,
+                    r=8,
+                    lora_alpha=32,
+                    lora_dropout=0.1,
+                    target_modules=target_modules
+                )
+                model = get_peft_model(model, peft_config)
+                print(f"✅ LoRA applied to {model_name} with target modules: {target_modules}")
+            except Exception as e:
+                print(f"⚠️ LoRA failed for {model_name}, falling back to full fine-tuning: {e}")
+        else:
+            print(f"ℹ️ LoRA not configured for {model_name}, using full fine-tuning.")
+
+        self.model = model  # store for Trainer
+
+    # Define training arguments
+        training_args = TrainingArguments(
+            output_dir=output_dir,
+            num_train_epochs=3,
+            per_device_train_batch_size=16,
+            per_device_eval_batch_size=16,
+            warmup_steps=500,
+            weight_decay=0.01,
+            logging_dir="./logs",
+            logging_steps=10,
+            eval_strategy="epoch",
+            save_strategy="epoch",
+            load_best_model_at_end=True,
+            metric_for_best_model="eval_loss",
+            greater_is_better=False,
+            report_to="none"
+        )
+
+    # Initialize custom callback
         ralf_saving_callback = RalfSavingCallback(self, save_path=save_path)
 
-        # Initialize the Trainer
+    # Initialize Trainer
         self.trainer = Trainer(
-            model=self.model,  # Our LoRA-configured model
-            args=training_args,  # Training arguments
-            train_dataset=self.train_dataset,  # Training dataset
-            eval_dataset=self.val_dataset,  # Validation dataset
-            data_collator=DataCollatorWithPadding(tokenizer=self.tokenizer), # Use DataCollatorWithPadding
-            # compute_metrics=compute_metrics # Optional: define a function to compute metrics
-            callbacks=[ralf_saving_callback] # Add the custom callback here
+            model=self.model,
+            args=training_args,
+            train_dataset=self.train_dataset,
+            eval_dataset=self.val_dataset,
+            compute_metrics=Ralf.compute_metrics,  # Add metrics computation
+            data_collator=DataCollatorWithPadding(tokenizer=self.tokenizer),
+            callbacks=[ralf_saving_callback]
         )
 
-        print("Trainer initialization completed with RalfSavingCallback.")
-
-    def save_state(self, file_path: str = "ralf_state.pkl"):
-        """
-        Saves the current state of the Ralf instance using pickling.
-
-        Args:
-            file_path: The path to the file where the state will be saved.
-        """
-        try:
-            with open(file_path, 'wb') as f:
-                pickle.dump(self, f)
-            print(f"Ralf state successfully saved to {file_path}")
-        except Exception as e:
-            print(f"Error saving Ralf state: {e}")
-
+        print(f"Trainer initialized for model {model_name} with RalfSavingCallback.")
     @staticmethod
     def load_state(file_path: str = "ralf_state.pkl"):
         """
