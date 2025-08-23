@@ -61,7 +61,7 @@ def testImport(library:str):
 
         print(f"Successfully imported module: {library}") # Added a success message
         # Import specific classes/functions if needed
-        if library == 'peft:
+        if library == 'peft':
             LoraConfig = importlib.import_module('peft.LoraConfig')   
             get_peft_model = importlib.import_module('peft.get_peft_model')
 
