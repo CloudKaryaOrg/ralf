@@ -34,7 +34,9 @@ def get_peft_model():     # This was created to fix the build error when LLM lib
     pass
 
 def importLib(library:str):
+    """Dynamically imports a library, installing it via pip if not already installed."""
     global LoraConfig, get_peft_model
+
     if library in sys.modules:
         print(f"Library {library} is already imported.")
         return True
@@ -315,6 +317,8 @@ class RalfTraining:
             model_name: The name of the pre-trained model to load (e.g., "bert-base-uncased").
         """
         # Use self.model_name
+        importLib('peft')  # Dynamically import peft library
+
         # Use HF_TOKEN if available when loading the model
         self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name, num_labels=self.num_labels, token=self.hf_token)
 
@@ -352,9 +356,7 @@ class RalfTraining:
         Initializes the Hugging Face Trainer object for training with LoRA if supported,
         otherwise full fine-tuning.
         """
-        from transformers import AutoModelForSequenceClassification, AutoTokenizer, DataCollatorWithPadding
-        from peft import LoraConfig, get_peft_model
-        import os
+        importLib('peft')  # Dynamically import peft library
 
         def get_target_modules(name):
             name = name.lower()
