@@ -1,4 +1,4 @@
-# RALF - README
+# RALF - README .
 
 ## Test in the container
 Ralf has two usages: in the frontend container and library for other services. To test the library, build and deploy the docker image locally. A valid HuggingFace token is required to run the test. You will be prompted to enter the token when the docker image is deployed.
