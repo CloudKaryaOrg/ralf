@@ -428,7 +428,7 @@ class RalfTraining:
             args=training_args,
             train_dataset=self.train_dataset,
             eval_dataset=self.val_dataset,
-            compute_metrics=Ralf.compute_metrics,  # Add metrics computation
+            compute_metrics=RalfTraining.compute_metrics,  # Add metrics computation
             data_collator=DataCollatorWithPadding(tokenizer=self.tokenizer),
             callbacks=[ralf_saving_callback]
         )
