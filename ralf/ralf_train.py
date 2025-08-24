@@ -3,6 +3,7 @@ import pandas as pd
 import pickle
 import warnings
 import psutil  # Add this import
+import GPUtil
 from openai import OpenAI
 import humanize
 import google.generativeai as genai
@@ -36,7 +37,7 @@ warnings.filterwarnings("ignore")  # Ignore warnings for cleaner output
 OPEN_AI_MODEL = "gpt-4-turbo-preview"
 GEMINI_MODEL = "gemini-2.5-flash"
 
-def testImport(library:str):
+def importLib(library:str):
     if library in sys.modules:
         print(f"Library {library} is already imported.")
         return True
@@ -76,25 +77,44 @@ def testImport(library:str):
 
 # ---------------------- SYSTEM INFO ----------------------
 def get_system_info():
-    if os.environ.get('RALF-SERVICE') != '1':
-        gpu_available = torch.cuda.is_available()
-        gpu_info = f"{torch.cuda.get_device_name(0)}" if gpu_available else "No GPU"
-        gpu_memory = f"{torch.cuda.get_device_properties(0).total_memory/1024**3:.2f} GB" if gpu_available else "N/A"
-        gpu_count = torch.cuda.device_count() if gpu_available else 0
-    else:
-        gpu_available = False
-        gpu_info = "N/A"
-        gpu_memory = "N/A"
-        gpu_count = 0
+    """Returns a dictionary with system information including GPU and RAM details."""
 
     ram = humanize.naturalsize(psutil.virtual_memory().total)
-    return {
-        "GPU Available": "✅ Yes" if gpu_available else "❌ No",
-        "GPU Model": gpu_info,
-        "GPU Memory": gpu_memory,
-        "GPU Count": gpu_count,
+    """Using torch
+    gpu_info = {
+        "GPU Available": "✅ Yes" if torch.cuda.is_available() else "❌ No",
+        "GPU Model": f"{torch.cuda.get_device_name(0)}" if gpu_available else "No GPU",
+        "GPU Memory": f"{torch.cuda.get_device_properties(0).total_memory/1024**3:.2f} GB" if gpu_available else "N/A",
+        "GPU Count": torch.cuda.device_count() if gpu_available else 0,
         "System RAM": ram
     }
+    """
+
+    gpu_list = GPUtil.getGPUs()
+    if gpu_list:
+        gpu_info = {
+            "GPU Available": "✅ Yes",
+            "GPU Model": f"{gpu_list[0].name}",
+            "GPU Memory": f"{gpu_list[0].memoryTotal / 1024:.0f} GB",
+            "GPU Count": str(len(gpu_list)),
+            "System RAM": ram,
+            "GPU ID": f"{gpu_list[0].id}",
+            "Used Memory" : f"{gpu_list[0].memoryUsed / 1024:.0f} GB",
+            "Free Memory" : f"{gpu_list[0].memoryFree / 1024:.0f} GB",
+            "Memory Utilization": f"{gpu_list[0].memoryUtil * 100:.2f}%",
+            "GPU Load" : f"{gpu_list[0].load * 100:.2f}%",
+            "Temperature" : f"{gpu_list[0].temperature}°C"
+        }
+    else:
+        gpu_info = {
+            "GPU Available": "❌ No",
+            "GPU Model": "No GPU",
+            "GPU Memory": "N/A",
+            "GPU Count": 0,
+            "System RAM": ram
+        }
+
+    return gpu_info
 
 # Define the custom callback for saving the Ralf instance
 class RalfSavingCallback(TrainerCallback):
