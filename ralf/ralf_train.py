@@ -17,6 +17,15 @@ import sys
 import subprocess
 import importlib
 
+from nltk.corpus import wordnet # Ensure you have the OpenAI Python client installed
+import json
+import re
+
+warnings.filterwarnings("ignore")  # Ignore warnings for cleaner output
+
+OPEN_AI_MODEL = "gpt-4-turbo-preview"
+GEMINI_MODEL = "gemini-2.5-flash"
+
 if os.environ.get('RALF-SERVICE') != '1':
     import torch
     from peft import LoraConfig, get_peft_model
@@ -28,16 +37,8 @@ else:
     def get_peft_model():     # This was created to fix the build error when LLM libraries are not included
         pass
 
-from nltk.corpus import wordnet # Ensure you have the OpenAI Python client installed
-import json
-import re
-
-warnings.filterwarnings("ignore")  # Ignore warnings for cleaner output
-
-OPEN_AI_MODEL = "gpt-4-turbo-preview"
-GEMINI_MODEL = "gemini-2.5-flash"
-
 def importLib(library:str):
+    global LoraConfig, get_peft_model
     if library in sys.modules:
         print(f"Library {library} is already imported.")
         return True
