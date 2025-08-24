@@ -26,16 +26,12 @@ warnings.filterwarnings("ignore")  # Ignore warnings for cleaner output
 OPEN_AI_MODEL = "gpt-4-turbo-preview"
 GEMINI_MODEL = "gemini-2.5-flash"
 
-if os.environ.get('RALF-SERVICE') != '1':
-    import torch
-    from peft import LoraConfig, get_peft_model
-else:
-    # If more LLM libraries are not included, define dummy classes/functions here
-    # Also update the import mapping in testImport accordingly
-    class LoraConfig:       # This was created to fix the build error when LLM libraries are not included
-        pass
-    def get_peft_model():     # This was created to fix the build error when LLM libraries are not included
-        pass
+# If more LLM libraries are not included, define dummy classes/functions here
+# Also update the importing in importLib accordingly
+class LoraConfig:       # This was created to fix the build error when LLM libraries are not included
+    pass
+def get_peft_model():     # This was created to fix the build error when LLM libraries are not included
+    pass
 
 def importLib(library:str):
     global LoraConfig, get_peft_model
