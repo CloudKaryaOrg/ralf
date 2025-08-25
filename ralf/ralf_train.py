@@ -37,7 +37,7 @@ class LoraConfig:
 def get_peft_model():
     pass
 
-def importLib(library:str):
+def importLib():
     """Dynamically imports a library, installing it via pip if not already installed.
        If the function returns False, the library could not be imported."""
     global torch, peft                  # module type 
