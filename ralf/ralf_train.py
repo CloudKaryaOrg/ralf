@@ -316,8 +316,12 @@ class RalfTraining:
         Args:
             model_name: The name of the pre-trained model to load (e.g., "bert-base-uncased").
         """
-        # Use self.model_name
-        importLib('peft')  # Dynamically import peft library
+        if not importLib('torch'):  # Dynamically import torch library
+            print("Not able to load PyTorch.")
+            return
+        elif not importLib('peft'):  # Dynamically import peft library
+            print("Not able to load peft.")
+            return
 
         # Use HF_TOKEN if available when loading the model
         self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name, num_labels=self.num_labels, token=self.hf_token)
@@ -356,7 +360,12 @@ class RalfTraining:
         Initializes the Hugging Face Trainer object for training with LoRA if supported,
         otherwise full fine-tuning.
         """
-        importLib('peft')  # Dynamically import peft library
+        if not importLib('torch'):  # Dynamically import torch library
+            print("Not able to load PyTorch.")
+            return
+        elif not importLib('peft'):  # Dynamically import peft library
+            print("Not able to load peft.")
+            return
 
         def get_target_modules(name):
             name = name.lower()
