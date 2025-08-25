@@ -26,53 +26,63 @@ warnings.filterwarnings("ignore")  # Ignore warnings for cleaner output
 OPEN_AI_MODEL = "gpt-4-turbo-preview"
 GEMINI_MODEL = "gemini-2.5-flash"
 
-# If more LLM libraries are not included, define dummy classes/functions here
-# Also update the importing in importLib accordingly
-class LoraConfig:       # This was created to fix the build error when LLM libraries are not included
+# These are dummy classes/functions created to fix the build error when LLM libraries
+# are not included add more entries here and update the importing in importLib accordingly
+class torch:
     pass
-def get_peft_model():     # This was created to fix the build error when LLM libraries are not included
+class peft:
+    pass
+class LoraConfig:
+    pass
+def get_peft_model():
     pass
 
 def importLib(library:str):
-    """Dynamically imports a library, installing it via pip if not already installed."""
+    """Dynamically imports a library, installing it via pip if not already installed.
+       If the function returns False, the library could not be imported."""
+    global torch, peft                  # module type 
     global LoraConfig, get_peft_model
 
-    if library in sys.modules:
-        print(f"Library {library} is already imported.")
-        return True
-
-    try:
-        # Using check=False so that a non-zero exit code does not raise a CalledProcessError
-        returnmsg = subprocess.run(['pip', 'show', f'{library}'], capture_output=True, text=True, check=False)
-        if (returnmsg.returncode != 0):
-            print(f"Package {library} is not installed. Trying to install it...")
-            installmsg = subprocess.run(['pip', 'install', f'{library}'], capture_output=True, text=True, check=False)
-            if installmsg.returncode != 0:
-                print(f"Failed to install library {library}.")
-                return False # Return False if installation fails
-            print(f"Successfully installed library {library}. Trying to import it...")
+    # Loop to install multiple needed library modules
+    for library in ['torch', 'peft']:
+        if library in sys.modules:
+            print(f"Library {library} is already imported.")
+            continue
 
         try:
-            imported_module = importlib.import_module(library)
-        except:
-            print(f"Failed to import library {library}.")
-            return False # Return False if import fails
+            # Using check=False so that a non-zero exit code does not raise a CalledProcessError
+            returnmsg = subprocess.run(['pip', 'show', f'{library}'], capture_output=True, text=True, check=False)
+            if (returnmsg.returncode != 0):
+                print(f"Package {library} is not installed. Trying to install it...")
+                installmsg = subprocess.run(['pip', 'install', f'{library}'], capture_output=True, text=True, check=False)
+                if installmsg.returncode != 0:
+                    print(f"Failed to install library {library}.")
+                    return False # Return False if installation fails
+                print(f"Successfully installed library {library}. Trying to import it...")
+        except ImportError:
+            print(f"Library {library} is NOT installed and could not be imported.")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            return False # Return False for any other exception
 
-        print(f"Successfully imported {library}.") # Added a success message
-        # Import specific classes/functions if needed
-        if library == 'peft':
-            LoraConfig = peft.LoraConfig   
-            get_peft_model = peft.get_peft_model
-            print(f"LoraConfig and get_peft_model have been imported.")
+    try:
+        torch = importlib.import_module('torch')
+        peft = importlib.import_module('peft')
+    except:
+        print(f"Failed to import one of the library.")
+        return False # Return False if import fails
+    print(f"Successfully imported {library}.") # Added a success message
 
-        return True # Return True if import is successful
+    # Import specific classes/functions as needed
+    if library == 'peft':
+        LoraConfig = peft.LoraConfig   
+        get_peft_model = peft.get_peft_model
+        print(f"LoraConfig and get_peft_model have been imported.")
+        return True # Return True. Import is successful
+    else:
+        print(f"Failed to import sub library.")
+        return False # Return False for any other exception
 
-    except ImportError:
-        print(f"Library {library} is NOT installed and could not be imported.")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-
-    return False # Return False for any other exception
 
 # ---------------------- SYSTEM INFO ----------------------
 def get_system_info():
@@ -316,11 +326,8 @@ class RalfTraining:
         Args:
             model_name: The name of the pre-trained model to load (e.g., "bert-base-uncased").
         """
-        if not importLib('torch'):  # Dynamically import torch library
-            print("Not able to load PyTorch.")
-            return
-        elif not importLib('peft'):  # Dynamically import peft library
-            print("Not able to load peft.")
+        if not importLib():  # Dynamically import torch library
+            print("Not able to load dynamic library.")
             return
 
         # Use HF_TOKEN if available when loading the model
@@ -360,11 +367,8 @@ class RalfTraining:
         Initializes the Hugging Face Trainer object for training with LoRA if supported,
         otherwise full fine-tuning.
         """
-        if not importLib('torch'):  # Dynamically import torch library
-            print("Not able to load PyTorch.")
-            return
-        elif not importLib('peft'):  # Dynamically import peft library
-            print("Not able to load peft.")
+        if not importLib():  # Dynamically import torch library
+            print("Not able to load dynamic library.")
             return
 
         def get_target_modules(name):
