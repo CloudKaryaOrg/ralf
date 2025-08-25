@@ -28,6 +28,10 @@ GEMINI_MODEL = "gemini-2.5-flash"
 
 # These are dummy classes/functions created to fix the build error when LLM libraries
 # are not included add more entries here and update the importing in importLib accordingly
+
+import torch
+from peft import LoraConfig, get_peft_model
+"""
 class torch:
     pass
 class peft:
@@ -36,8 +40,10 @@ class LoraConfig:
     pass
 def get_peft_model():
     pass
-
+"""
 def importLib():
+    return True
+'''
     """Dynamically imports a library, installing it via pip if not already installed.
        If the function returns False, the library could not be imported."""
     global torch, peft                  # module type 
@@ -82,7 +88,7 @@ def importLib():
     else:
         print(f"Failed to import sub library.")
         return False # Return False for any other exception
-
+'''
 
 # ---------------------- SYSTEM INFO ----------------------
 def get_system_info():
