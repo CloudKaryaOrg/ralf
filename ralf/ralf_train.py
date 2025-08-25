@@ -58,12 +58,12 @@ def importLib(library:str):
             print(f"Failed to import library {library}.")
             return False # Return False if import fails
 
-        print(f"Successfully imported module {library}.") # Added a success message
+        print(f"Successfully imported {library}.") # Added a success message
         # Import specific classes/functions if needed
         if library == 'peft':
             LoraConfig = importlib.import_module('peft.LoraConfig')   
             get_peft_model = importlib.import_module('peft.get_peft_model')
-        print(f"LoraConfig and get_peft_model have been imported.")
+            print(f"LoraConfig and get_peft_model have been imported.")
 
         return True # Return True if import is successful
 

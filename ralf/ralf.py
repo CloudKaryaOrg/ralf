@@ -37,12 +37,10 @@ class Ralf(RalfTraining):
         self.ram_gb = system_info["System RAM"]
         self.gpu_count = system_info["GPU Count"]
 
-        print(f"GPU available: {self.gpu_available}")
         if self.gpu_available:
             print(f"GPU count: {self.gpu_count}")
             print(f"GPU name: {self.gpu_name}")
             print(f"GPU RAM: {self.gpu_ram_gb} GB")
-        print(f"Available system RAM: {self.ram_gb} GB")
 
         # API keys
         self.open_api_key = OPENAI_API_KEY
