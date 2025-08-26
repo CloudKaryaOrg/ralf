@@ -29,8 +29,8 @@ GEMINI_MODEL = "gemini-2.5-flash"
 # These are dummy classes/functions created to fix the build error when LLM libraries
 # are not included add more entries here and update the importing in importLib accordingly
 
-#import torch
-#from peft import LoraConfig, get_peft_model
+import torch
+from peft import LoraConfig, get_peft_model
 
 class torch:
     pass
