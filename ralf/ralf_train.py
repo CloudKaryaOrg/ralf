@@ -451,6 +451,20 @@ class RalfTraining:
         )
 
         print(f"Trainer initialized for model {model_name} with RalfSavingCallback.")
+
+    def augment_train_eval(self, train_df: pd.DataFrame, source_col: str, target_col: str,
+                           model_id: str):
+        """
+        Fine-tunes the model using the Trainer.
+        """
+        self.load_and_process_data( train_df, source_col, target_col, model_id )
+
+        # Initialize trainer with LoRA/fallback logic
+        self.initialize_trainer(model_id)
+        self.trainer.train()
+        print("Augument / Fine-tune Training completed.")
+        return self.trainer.evaluate()
+
     @staticmethod
     def load_state(file_path: str = "ralf_state.pkl"):
         """
@@ -473,3 +487,17 @@ class RalfTraining:
         except Exception as e:
             print(f"Error loading Ralf state: {e}")
             return None
+        
+    def save_state(self, file_path: str = "ralf_state.pkl"):
+        """
+        Saves the current state of the Ralf instance using pickling.
+
+        Args:
+            file_path: The path to the file where the state will be saved.
+        """
+        try:
+            with open(file_path, 'wb') as f:
+                pickle.dump(self, f)
+            print(f"Ralf state successfully saved to {file_path}")
+        except Exception as e:
+            print(f"Error saving Ralf state: {e}")
