@@ -41,10 +41,10 @@ class LoraConfig:
     pass
 def get_peft_model():
     pass
-
+'''
 def importLib():
     return True
-
+'''
     """Dynamically imports a library, installing it via pip if not already installed.
        If the function returns False, the library could not be imported."""
     global torch, peft                  # module type 
@@ -392,6 +392,7 @@ class RalfTraining:
 
     # Load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer.add_special_tokens({'pad_token': '[PAD]'}) # Added to fix tokenization error
 
     # Load model
         model = AutoModelForSequenceClassification.from_pretrained(
