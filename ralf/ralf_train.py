@@ -32,6 +32,7 @@ GEMINI_MODEL = "gemini-2.5-flash"
 import torch
 from peft import LoraConfig, get_peft_model
 
+'''
 class torch:
     pass
 class peft:
@@ -43,7 +44,7 @@ def get_peft_model():
 
 def importLib():
     return True
-'''
+
     """Dynamically imports a library, installing it via pip if not already installed.
        If the function returns False, the library could not be imported."""
     global torch, peft                  # module type 
@@ -308,6 +309,7 @@ class RalfTraining:
             raise ValueError("model_name must be set before calling load_and_process_data")
         # Use HF_TOKEN if available when loading the tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token=self.hf_token)
+        self.tokenizer.add_special_tokens({'pad_token': '[PAD]'}) # Added to fix tokenization error
 
         # Tokenize function
         def tokenize_function(examples):
