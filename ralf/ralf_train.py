@@ -166,6 +166,7 @@ class RalfTraining:
         self.val_dataset = None
         self.model = None
 
+
     def format_param_size(self, total_params):
         """Formats parameter count with units M, B, or P."""
         if total_params >= 1e15:
@@ -221,6 +222,7 @@ class RalfTraining:
         except Exception as e:
             return f"Error estimating: {e}"
 
+
     def get_llm_client(self):
         """Helper method to get the appropriate LLM client."""
         if self.open_api_key:
@@ -254,6 +256,7 @@ class RalfTraining:
                return response.text
         except Exception as e:
            raise Exception(f"Error calling {client_info['type']} API: {str(e)}")
+
 
     def load_and_process_data(self, df: pd.DataFrame, text_column: str, label_column: str, model_name: str):
         """
@@ -291,7 +294,6 @@ class RalfTraining:
         features['label'] = ClassLabel(num_classes=self.num_labels, names=unique_conditions)
         hf_dataset = hf_dataset.cast(features)
 
-
         # Split the dataset into training and validation sets
         train_df, val_df = train_test_split(
             dataset_df,
@@ -327,6 +329,7 @@ class RalfTraining:
         print(f"Number of labels: {self.num_labels}")
         print("Label mapping:", self.label_to_id)
 
+
     def load_and_configure_model(self): # Removed model_name argument
         """
         Loads a pre-trained model and configures it for sequence classification with LoRA.
@@ -358,6 +361,8 @@ class RalfTraining:
         self.model.print_trainable_parameters()
 
         print(f"Model loading and LoRA setup completed for '{self.model_name}'.")
+
+
     @staticmethod
     def compute_metrics(eval_pred):
         logits, labels = eval_pred
@@ -370,6 +375,7 @@ class RalfTraining:
         }
     results = []
 
+
     def initialize_trainer(self, model_name: str,output_dir: str = "./results", save_path: str = "ralf_state.pkl"):
         """
         Initializes the Hugging Face Trainer object for training with LoRA if supported,
@@ -377,7 +383,7 @@ class RalfTraining:
         """
         if not importLib():  # Dynamically import torch library
             print("Not able to load dynamic library.")
-            return
+            return False
 
         def get_target_modules(name):
             name = name.lower()
@@ -455,6 +461,7 @@ class RalfTraining:
 
         print(f"Trainer initialized for model {model_name} with RalfSavingCallback.")
 
+
     def augment_train_eval(self, train_df: pd.DataFrame, source_col: str, target_col: str,
                            model_id: str):
         """
@@ -467,6 +474,7 @@ class RalfTraining:
         self.trainer.train()
         print("Augument / Fine-tune Training completed.")
         return self.trainer.evaluate()
+
 
     @staticmethod
     def load_state(file_path: str = "ralf_state.pkl"):
@@ -490,6 +498,7 @@ class RalfTraining:
         except Exception as e:
             print(f"Error loading Ralf state: {e}")
             return None
+
         
     def save_state(self, file_path: str = "ralf_state.pkl"):
         """
