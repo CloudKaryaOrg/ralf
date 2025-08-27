@@ -467,6 +467,7 @@ class RalfTraining:
         """
         Fine-tunes the model using the Trainer.
         """
+        print("Starting Augument / Fine-tune Training for model: ", model_id)
         self.load_and_process_data( train_df, source_col, target_col, model_id )
 
         # Initialize trainer with LoRA/fallback logic
@@ -499,7 +500,7 @@ class RalfTraining:
             print(f"Error loading Ralf state: {e}")
             return None
 
-        
+
     def save_state(self, file_path: str = "ralf_state.pkl"):
         """
         Saves the current state of the Ralf instance using pickling.
