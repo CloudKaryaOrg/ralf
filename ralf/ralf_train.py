@@ -3,24 +3,19 @@ import pandas as pd
 import pickle
 import warnings
 import psutil  # Add this import
+import GPUtil
 from openai import OpenAI
 import humanize
 import google.generativeai as genai
 from transformers import AutoConfig
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
-
-
-if os.environ.get('RALF-SERVICE') != '1':
-    import torch
-    from peft import LoraConfig, get_peft_model
-    from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding, AutoTokenizer, AutoConfig
-    from transformers.trainer_callback import TrainerCallback
-    from sklearn.model_selection import train_test_split
-    from datasets import Dataset, ClassLabel, Features, Value
-
-else:
-    class TrainerCallback:          # This was created to fix the build error when LLM libraries are not included
-        pass
+from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding, AutoTokenizer, AutoConfig
+from transformers.trainer_callback import TrainerCallback
+from sklearn.model_selection import train_test_split
+from datasets import Dataset, ClassLabel, Features, Value
+import sys
+import subprocess
+import importlib
 
 from nltk.corpus import wordnet # Ensure you have the OpenAI Python client installed
 import json
@@ -30,27 +25,112 @@ warnings.filterwarnings("ignore")  # Ignore warnings for cleaner output
 
 OPEN_AI_MODEL = "gpt-4-turbo-preview"
 GEMINI_MODEL = "gemini-2.5-flash"
+
+# These are dummy classes/functions created to fix the build error when LLM libraries
+# are not included add more entries here and update the importing in importLib accordingly
+
+import torch
+from peft import LoraConfig, get_peft_model
+
+'''
+class torch:
+    pass
+class peft:
+    pass
+class LoraConfig:
+    pass
+def get_peft_model():
+    pass
+'''
+def importLib():
+    return True
+'''
+    """Dynamically imports a library, installing it via pip if not already installed.
+       If the function returns False, the library could not be imported."""
+    global torch, peft                  # module type 
+    global LoraConfig, get_peft_model
+
+    # Loop to install multiple needed library modules
+    for library in ['torch', 'peft']:
+        if library in sys.modules:
+            print(f"Library {library} is already imported.")
+            continue
+
+        try:
+            # Using check=False so that a non-zero exit code does not raise a CalledProcessError
+            returnmsg = subprocess.run(['pip', 'show', f'{library}'], capture_output=True, text=True, check=False)
+            if (returnmsg.returncode != 0):
+                print(f"Package {library} is not installed. Trying to install it...")
+                installmsg = subprocess.run(['pip', 'install', f'{library}'], capture_output=True, text=True, check=False)
+                if installmsg.returncode != 0:
+                    print(f"Failed to install library {library}.")
+                    return False # Return False if installation fails
+                print(f"Successfully installed library {library}. Trying to import it...")
+        except ImportError:
+            print(f"Library {library} is NOT installed and could not be imported.")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            return False # Return False for any other exception
+
+    try:
+        torch = importlib.import_module('torch')
+        peft = importlib.import_module('peft')
+    except:
+        print(f"Failed to import one of the library.")
+        return False # Return False if import fails
+    print(f"Successfully imported {library}.") # Added a success message
+
+    # Import specific classes/functions as needed
+    if library == 'peft':
+        LoraConfig = peft.LoraConfig   
+        get_peft_model = peft.get_peft_model
+        print(f"LoraConfig and get_peft_model have been imported.")
+        return True # Return True. Import is successful
+    else:
+        print(f"Failed to import sub library.")
+        return False # Return False for any other exception
+'''
+
 # ---------------------- SYSTEM INFO ----------------------
 def get_system_info():
-    if os.environ.get('RALF-SERVICE') != '1':
-        gpu_available = torch.cuda.is_available()
-        gpu_info = f"{torch.cuda.get_device_name(0)}" if gpu_available else "No GPU"
-        gpu_memory = f"{torch.cuda.get_device_properties(0).total_memory/1024**3:.2f} GB" if gpu_available else "N/A"
-        gpu_count = torch.cuda.device_count() if gpu_available else 0
-    else:
-        gpu_available = False
-        gpu_info = "N/A"
-        gpu_memory = "N/A"
-        gpu_count = 0
+    """Returns a dictionary with system information including GPU and RAM details."""
 
     ram = humanize.naturalsize(psutil.virtual_memory().total)
-    return {
-        "GPU Available": "✅ Yes" if gpu_available else "❌ No",
-        "GPU Model": gpu_info,
-        "GPU Memory": gpu_memory,
-        "GPU Count": gpu_count,
+    """Using torch
+    gpu_info = {
+        "GPU Available": "✅ Yes" if torch.cuda.is_available() else "❌ No",
+        "GPU Model": f"{torch.cuda.get_device_name(0)}" if gpu_available else "No GPU",
+        "GPU Memory": f"{torch.cuda.get_device_properties(0).total_memory/1024**3:.2f} GB" if gpu_available else "N/A",
+        "GPU Count": torch.cuda.device_count() if gpu_available else 0,
         "System RAM": ram
     }
+    """
+
+    gpu_list = GPUtil.getGPUs()
+    if gpu_list:
+        gpu_info = {
+            "GPU Available": "✅ Yes",
+            "GPU Model": f"{gpu_list[0].name}",
+            "GPU Memory": f"{gpu_list[0].memoryTotal / 1024:.0f} GB",
+            "GPU Count": str(len(gpu_list)),
+            "System RAM": ram,
+            "GPU ID": f"{gpu_list[0].id}",
+            "Used Memory" : f"{gpu_list[0].memoryUsed / 1024:.0f} GB",
+            "Free Memory" : f"{gpu_list[0].memoryFree / 1024:.0f} GB",
+            "Memory Utilization": f"{gpu_list[0].memoryUtil * 100:.2f}%",
+            "GPU Load" : f"{gpu_list[0].load * 100:.2f}%",
+            "Temperature" : f"{gpu_list[0].temperature}°C"
+        }
+    else:
+        gpu_info = {
+            "GPU Available": "❌ No",
+            "GPU Model": "No GPU",
+            "GPU Memory": "N/A",
+            "GPU Count": 0,
+            "System RAM": ram
+        }
+
+    return gpu_info
 
 # Define the custom callback for saving the Ralf instance
 class RalfSavingCallback(TrainerCallback):
@@ -85,6 +165,7 @@ class RalfTraining:
         self.train_dataset = None
         self.val_dataset = None
         self.model = None
+
 
     def format_param_size(self, total_params):
         """Formats parameter count with units M, B, or P."""
@@ -141,6 +222,7 @@ class RalfTraining:
         except Exception as e:
             return f"Error estimating: {e}"
 
+
     def get_llm_client(self):
         """Helper method to get the appropriate LLM client."""
         if self.open_api_key:
@@ -174,6 +256,7 @@ class RalfTraining:
                return response.text
         except Exception as e:
            raise Exception(f"Error calling {client_info['type']} API: {str(e)}")
+
 
     def load_and_process_data(self, df: pd.DataFrame, text_column: str, label_column: str, model_name: str):
         """
@@ -211,7 +294,6 @@ class RalfTraining:
         features['label'] = ClassLabel(num_classes=self.num_labels, names=unique_conditions)
         hf_dataset = hf_dataset.cast(features)
 
-
         # Split the dataset into training and validation sets
         train_df, val_df = train_test_split(
             dataset_df,
@@ -229,6 +311,7 @@ class RalfTraining:
             raise ValueError("model_name must be set before calling load_and_process_data")
         # Use HF_TOKEN if available when loading the tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, token=self.hf_token)
+        self.tokenizer.add_special_tokens({'pad_token': '[PAD]'}) # Added to fix tokenization error
 
         # Tokenize function
         def tokenize_function(examples):
@@ -246,6 +329,7 @@ class RalfTraining:
         print(f"Number of labels: {self.num_labels}")
         print("Label mapping:", self.label_to_id)
 
+
     def load_and_configure_model(self): # Removed model_name argument
         """
         Loads a pre-trained model and configures it for sequence classification with LoRA.
@@ -253,7 +337,10 @@ class RalfTraining:
         Args:
             model_name: The name of the pre-trained model to load (e.g., "bert-base-uncased").
         """
-        # Use self.model_name
+        if not importLib():  # Dynamically import torch library
+            print("Not able to load dynamic library.")
+            return
+
         # Use HF_TOKEN if available when loading the model
         self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name, num_labels=self.num_labels, token=self.hf_token)
 
@@ -274,6 +361,8 @@ class RalfTraining:
         self.model.print_trainable_parameters()
 
         print(f"Model loading and LoRA setup completed for '{self.model_name}'.")
+
+
     @staticmethod
     def compute_metrics(eval_pred):
         logits, labels = eval_pred
@@ -286,14 +375,15 @@ class RalfTraining:
         }
     results = []
 
+
     def initialize_trainer(self, model_name: str,output_dir: str = "./results", save_path: str = "ralf_state.pkl"):
         """
         Initializes the Hugging Face Trainer object for training with LoRA if supported,
         otherwise full fine-tuning.
         """
-        from transformers import AutoModelForSequenceClassification, AutoTokenizer, DataCollatorWithPadding
-        from peft import LoraConfig, get_peft_model
-        import os
+        if not importLib():  # Dynamically import torch library
+            print("Not able to load dynamic library.")
+            return False
 
         def get_target_modules(name):
             name = name.lower()
@@ -308,6 +398,7 @@ class RalfTraining:
 
     # Load tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer.add_special_tokens({'pad_token': '[PAD]'}) # Added to fix tokenization error
 
     # Load model
         model = AutoModelForSequenceClassification.from_pretrained(
@@ -369,6 +460,23 @@ class RalfTraining:
         )
 
         print(f"Trainer initialized for model {model_name} with RalfSavingCallback.")
+
+
+    def augment_train_eval(self, train_df: pd.DataFrame, source_col: str, target_col: str,
+                           model_id: str):
+        """
+        Fine-tunes the model using the Trainer.
+        """
+        print("Starting Augument / Fine-tune Training for model: ", model_id)
+        self.load_and_process_data( train_df, source_col, target_col, model_id )
+
+        # Initialize trainer with LoRA/fallback logic
+        self.initialize_trainer(model_id)
+        self.trainer.train()
+        print("Augument / Fine-tune Training completed.")
+        return self.trainer.evaluate()
+
+
     @staticmethod
     def load_state(file_path: str = "ralf_state.pkl"):
         """
@@ -391,3 +499,18 @@ class RalfTraining:
         except Exception as e:
             print(f"Error loading Ralf state: {e}")
             return None
+
+
+    def save_state(self, file_path: str = "ralf_state.pkl"):
+        """
+        Saves the current state of the Ralf instance using pickling.
+
+        Args:
+            file_path: The path to the file where the state will be saved.
+        """
+        try:
+            with open(file_path, 'wb') as f:
+                pickle.dump(self, f)
+            print(f"Ralf state successfully saved to {file_path}")
+        except Exception as e:
+            print(f"Error saving Ralf state: {e}")
